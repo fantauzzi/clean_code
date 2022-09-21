@@ -1,11 +1,11 @@
 import os
 import errno
 import logging
-import pandas as pd
-from churn_library import import_data, perform_eda, encoder_helper, perform_feature_engineering, train_models
 from pathlib import Path
-from imageio.v2 import imread
 import pickle
+import pandas as pd
+from imageio.v2 import imread
+from churn_library import import_data, perform_eda, encoder_helper, perform_feature_engineering, train_models
 
 logging.basicConfig(
     filename='./logs/churn_library.log',
@@ -17,12 +17,12 @@ train_test_set_pickle = 'train_test_set.pickle'
 encoded_pickle = 'encoded_set.pickle'
 
 
-def test_import(import_data):
+def test_import(function):
     '''
     test data import
     '''
     try:
-        df = import_data("./data/bank_data.csv")
+        df = function("./data/bank_data.csv")
         logging.info("Testing import_data: SUCCESS")
     except FileNotFoundError as err:
         logging.error("Testing import_eda: The file wasn't found")
@@ -37,7 +37,7 @@ def test_import(import_data):
         raise err
 
 
-def test_eda(perform_eda):
+def test_eda(function):
     '''
     test perform eda function
     '''
@@ -54,11 +54,10 @@ def test_eda(perform_eda):
         df = import_data("./data/bank_data.csv")
         df['Churn'] = df['Attrition_Flag'].apply(lambda val: 0 if val == "Existing Customer" else 1)
     except Exception as ex:
-        logging.error(
-            f"Testing test_eda: cannot continue with test, got this exception while importing data {ex}"),
+        logging.error('Testing test_eda: cannot continue with test, got error while importing data.')
         raise ex
     try:
-        perform_eda(df)
+        function(df)
         logging.info("Executing perform_eda: SUCCESS")
     except Exception as ex:
         logging.error(f"Executing import_eda: got exception {ex}")
@@ -76,7 +75,7 @@ def test_eda(perform_eda):
                 f"Testing test_eda: while trying to load image {file_name} got this exception {ex}")
 
 
-def test_encoder_helper(encoder_helper):
+def test_encoder_helper(function):
     '''
     test encoder helper
     '''
@@ -91,7 +90,7 @@ def test_encoder_helper(encoder_helper):
     df['Churn'] = df['Attrition_Flag'].apply(lambda val: 0 if val == "Existing Customer" else 1)
     response = [f'{category}_Churn' for category in cat_columns]
     try:
-        res = encoder_helper(df, category_lst=cat_columns, response=response)
+        res = function(df, category_lst=cat_columns, response=response)
     except Exception as err:
         logging.error("Testing encode_helper: error while performing th encoding.")
         raise err
@@ -100,7 +99,7 @@ def test_encoder_helper(encoder_helper):
         pickle.dump(res, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     try:
-        assert type(df) is pd.DataFrame
+        assert isinstance(df, pd.DataFrame)
     except AssertionError as err:
         logging.error("Testing encode_helper: returned value should be of type pandas.DataFrame")
         raise err
@@ -120,7 +119,7 @@ def test_encoder_helper(encoder_helper):
     logging.info("Testing encoder_helper: SUCCESS")
 
 
-def test_perform_feature_engineering(perform_feature_engineering):
+def test_perform_feature_engineering(function):
     '''
     test perform_feature_engineering
     '''
@@ -133,7 +132,7 @@ def test_perform_feature_engineering(perform_feature_engineering):
             f"Testing perform_feature_engineering: cannot load pickle file {encoded_pickle} for testing, test cannot proceed")
         raise err
     try:
-        X_train, X_test, y_train, y_test = perform_feature_engineering(df)
+        X_train, X_test, y_train, y_test = function(df)
     except Exception as err:
         logging.error(
             "Testing perform_feature_engineering: error while performing feature engineering.")
@@ -165,12 +164,13 @@ def test_perform_feature_engineering(perform_feature_engineering):
             assert col in columns_set
     except AssertionError as err:
         logging.error(
-            "Testing perform_feature_engineering: train and test datasets must have the same variables, and only the expected variables")
+            "Testing perform_feature_engineering: train and test datasets must have the same variables, \
+            and only the expected variables")
         raise err
     logging.info("Testing perform_feature_engineering: SUCCESS")
 
 
-def test_train_models(train_models):
+def test_train_models(function):
     '''
     test train_models
     '''
@@ -195,10 +195,10 @@ def test_train_models(train_models):
 
     # Train the model
     try:
-        train_models(*split_dataset, show_plot=False)
+        function(*split_dataset, show_plot=False)
     except Exception as ex:
         logging.error(
-            f"Testing train_models: error while training model.")
+            "Testing train_models: error while training model.")
         raise ex
 
     # Check that files that should have been generated during training are actually there

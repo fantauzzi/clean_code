@@ -109,23 +109,6 @@ def perform_feature_engineering(df, response=None):
         'Card_Category'
     ]
 
-    quant_columns = [
-        'Customer_Age',
-        'Dependent_count',
-        'Months_on_book',
-        'Total_Relationship_Count',
-        'Months_Inactive_12_mon',
-        'Contacts_Count_12_mon',
-        'Credit_Limit',
-        'Total_Revolving_Bal',
-        'Avg_Open_To_Buy',
-        'Total_Amt_Chng_Q4_Q1',
-        'Total_Trans_Amt',
-        'Total_Trans_Ct',
-        'Total_Ct_Chng_Q4_Q1',
-        'Avg_Utilization_Ratio'
-    ]
-
     if not response:
         response = [f'{category}_Churn' for category in cat_columns]
     df = encoder_helper(df, category_lst=cat_columns, response=response)
@@ -151,8 +134,7 @@ def classification_report_image(y_train,
                                 y_train_preds_lr,
                                 y_train_preds_rf,
                                 y_test_preds_lr,
-                                y_test_preds_rf,
-                                ):
+                                y_test_preds_rf):
     '''
     produces classification report for training and testing results and stores report as image
     in images folder
@@ -265,7 +247,6 @@ def train_models(X_train, X_test, y_train, y_test, show_plot=True):
         'criterion': ['gini']
     }"""
 
-
     cv_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid, cv=5)
     cv_rfc.fit(X_train, y_train)
 
@@ -295,8 +276,8 @@ def train_models(X_train, X_test, y_train, y_test, show_plot=True):
     # plots
     plt.figure(figsize=(15, 8))
     ax = plt.gca()
-    rfc_disp = plot_roc_curve(cv_rfc.best_estimator_,
-                              X_test, y_test, ax=ax, alpha=0.8)
+    plot_roc_curve(cv_rfc.best_estimator_,
+                   X_test, y_test, ax=ax, alpha=0.8)
     lrc_plot.plot(ax=ax, alpha=0.8)
     if show_plot:
         plt.show()
@@ -312,7 +293,7 @@ def train_models(X_train, X_test, y_train, y_test, show_plot=True):
 
     plt.figure(figsize=(15, 8))
     ax = plt.gca()
-    rfc_disp = plot_roc_curve(rfc_model, X_test, y_test, ax=ax, alpha=0.8)
+    plot_roc_curve(rfc_model, X_test, y_test, ax=ax, alpha=0.8)
     lrc_plot.plot(ax=ax, alpha=0.8)
     if show_plot:
         plt.show()
