@@ -1,3 +1,13 @@
+"""
+Automated unit-tests for churn_library.py
+Output messages are logged into logs/churn_library.log
+Successful unit-tests output the models training and test results to console.
+
+author: Udacity and https://github.com/fantauzzi
+
+creation date: 21-Sep-2022
+"""
+
 import os
 import errno
 import logging
@@ -13,8 +23,11 @@ logging.basicConfig(
     filemode='w',
     format='%(name)s - %(levelname)s - %(message)s')
 
-train_test_set_pickle = 'train_test_set.pickle'
-encoded_pickle = 'encoded_set.pickle'
+# Files named below are used to save the output of a successful unit-test as input to a subsequent unit-test,
+# such that the latter doesn't have to redo the computation performed by the former. If removed from the file-system,
+# they are re-generated during testing.
+TRAIN_TEST_SET_PICKLE = 'train_test_set.pickle'
+ENCODED_PICKLE = 'encoded_set.pickle'
 
 
 def test_import(function):
@@ -22,15 +35,15 @@ def test_import(function):
     test data import
     '''
     try:
-        df = function("./data/bank_data.csv")
+        data_frame = function("./data/bank_data.csv")
         logging.info("Testing import_data: SUCCESS")
     except FileNotFoundError as err:
         logging.error("Testing import_eda: The file wasn't found")
         raise err
 
     try:
-        assert df.shape[0] > 0
-        assert df.shape[1] > 0
+        assert data_frame.shape[0] > 0
+        assert data_frame.shape[1] > 0
     except AssertionError as err:
         logging.error(
             "Testing import_data: The file doesn't appear to have rows and columns")
@@ -45,19 +58,19 @@ def test_eda(function):
                       'heatmap.png', 'marital_status_bar.png', 'total_trans_ct_hist.png']
     eda_path = r'./images/eda/'
     expected_files = [eda_path + file_name for file_name in expected_files]
-    # If the files perform_eda should create exist already, rename them appending .bck to them
+    # If the files perform_eda() should create exist already, rename them appending .bck to them
     for file_name in expected_files:
         if Path(file_name).exists():
             new_name = file_name + '.bck'
             Path(file_name).rename(Path(new_name))
     try:
-        df = import_data("./data/bank_data.csv")
-        df['Churn'] = df['Attrition_Flag'].apply(lambda val: 0 if val == "Existing Customer" else 1)
+        data_frame = import_data("./data/bank_data.csv")
+        data_frame['Churn'] = data_frame['Attrition_Flag'].apply(lambda val: 0 if val == "Existing Customer" else 1)
     except Exception as ex:
         logging.error('Testing test_eda: cannot continue with test, got error while importing data.')
         raise ex
     try:
-        function(df)
+        function(data_frame)
         logging.info("Executing perform_eda: SUCCESS")
     except Exception as ex:
         logging.error(f"Executing import_eda: got exception {ex}")
@@ -86,30 +99,30 @@ def test_encoder_helper(function):
         'Income_Category',
         'Card_Category'
     ]
-    df = import_data(r"./data/bank_data.csv")
-    df['Churn'] = df['Attrition_Flag'].apply(lambda val: 0 if val == "Existing Customer" else 1)
+    data_frame = import_data(r"./data/bank_data.csv")
+    data_frame['Churn'] = data_frame['Attrition_Flag'].apply(lambda val: 0 if val == "Existing Customer" else 1)
     response = [f'{category}_Churn' for category in cat_columns]
     try:
-        res = function(df, category_lst=cat_columns, response=response)
+        result = function(data_frame, category_lst=cat_columns, response=response)
     except Exception as err:
-        logging.error("Testing encode_helper: error while performing th encoding.")
+        logging.error("Testing encode_helper: error while performing the encoding.")
         raise err
 
-    with open(encoded_pickle, 'wb') as f:
-        pickle.dump(res, f, protocol=pickle.HIGHEST_PROTOCOL)
+    with open(ENCODED_PICKLE, 'wb') as pickle_file:
+        pickle.dump(result, pickle_file, protocol=pickle.HIGHEST_PROTOCOL)
 
     try:
-        assert isinstance(df, pd.DataFrame)
+        assert isinstance(data_frame, pd.DataFrame)
     except AssertionError as err:
         logging.error("Testing encode_helper: returned value should be of type pandas.DataFrame")
         raise err
     try:
-        assert len(res) == len(df)
+        assert len(result) == len(data_frame)
     except AssertionError as err:
         logging.error("Testing encode_helper: returned dataframe should have the same length as the input dataframe")
         raise err
     try:
-        cat_encoded_columns = set(res.columns)
+        cat_encoded_columns = set(result.columns)
         for col in cat_columns:
             assert col + '_Churn' in cat_encoded_columns
     except AssertionError as err:
@@ -125,26 +138,26 @@ def test_perform_feature_engineering(function):
     '''
     # Load pickled dataframe, that will be used for testing
     try:
-        with open(encoded_pickle, 'rb') as f:
-            df = pickle.load(f)
+        with open(ENCODED_PICKLE, 'rb') as picle_file:
+            data_frame = pickle.load(picle_file)
     except Exception as err:
         logging.error(
-            f"Testing perform_feature_engineering: cannot load pickle file {encoded_pickle} for testing, test cannot proceed")
+            f"Testing perform_feature_engineering: cannot load pickle file {ENCODED_PICKLE} for testing, test cannot proceed")
         raise err
     try:
-        X_train, X_test, y_train, y_test = function(df)
+        X_train, X_test, y_train, y_test = function(data_frame)
     except Exception as err:
         logging.error(
             "Testing perform_feature_engineering: error while performing feature engineering.")
         raise err
     # Pickle the result of feature engineering, it will be the input to another test
     pickl_me = (X_train, X_test, y_train, y_test)
-    with open(train_test_set_pickle, 'wb') as f:
-        pickle.dump(pickl_me, f, protocol=pickle.HIGHEST_PROTOCOL)
+    with open(TRAIN_TEST_SET_PICKLE, 'wb') as picle_file:
+        pickle.dump(pickl_me, picle_file, protocol=pickle.HIGHEST_PROTOCOL)
     try:
         assert len(X_train) == len(y_train)
         assert len(X_test) == len(y_test)
-        assert len(X_train) + len(X_test) == len(df)
+        assert len(X_train) + len(X_test) == len(data_frame)
     except AssertionError as err:
         logging.error(
             "Testing perform_feature_engineering: number of samples in resulting dataset splits is inconsistent.")
@@ -182,11 +195,11 @@ def test_train_models(function):
 
     # Load pickled file with dataset already split between training and test
     try:
-        with open(train_test_set_pickle, 'rb') as f:
-            split_dataset = pickle.load(f)
+        with open(TRAIN_TEST_SET_PICKLE, 'rb') as pickle_file:
+            split_dataset = pickle.load(pickle_file)
     except Exception as ex:
         logging.error(
-            f"Testing train_models: loading of file {train_test_set_pickle} with pickled dataset failed, test can't proceed.")
+            f"Testing train_models: loading of file {TRAIN_TEST_SET_PICKLE} with pickled dataset failed, test can't proceed.")
         raise ex
 
     # Remove files that should be generated during training, if they exist

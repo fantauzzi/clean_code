@@ -1,4 +1,11 @@
-# library doc string TODO what is this?
+"""
+This file contains various functions to support EDA, features engineering, model training and results visualization
+and interpretation for the Credit Card customers dataset. Produced images are saved into the `images` directory.
+
+author: Udacity and https://github.com/fantauzzi
+
+creation date: 21-Sep-2022
+"""
 import os
 from sklearn.metrics import plot_roc_curve, classification_report
 from sklearn.model_selection import GridSearchCV
@@ -25,71 +32,71 @@ def import_data(pth):
     input:
             pth: a path to the csv
     output:
-            df: pandas dataframe
+            data_frame: pandas dataframe
     '''
-    df = pd.read_csv(pth)
-    return df
+    data_frame = pd.read_csv(pth)
+    return data_frame
 
 
-def perform_eda(df):
+def perform_eda(data_frame):
     '''
-    perform eda on df and save figures to images folder
+    perform eda on data_frame and save figures to images folder
     input:
-            df: pandas dataframe
+            data_frame: pandas dataframe
 
     output:
             None
     '''
     plt.figure(figsize=(20, 10))
-    df['Churn'].hist()
+    data_frame['Churn'].hist()
     plt.savefig('images/eda/churn_hist.png')
 
     plt.figure(figsize=(20, 10))
-    df['Customer_Age'].hist()
+    data_frame['Customer_Age'].hist()
     plt.savefig('images/eda/customer_age_hist.png')
 
     plt.figure(figsize=(20, 10))
-    df.Marital_Status.value_counts('normalize').plot(kind='bar')
+    data_frame.Marital_Status.value_counts('normalize').plot(kind='bar')
     plt.savefig('images/eda/marital_status_bar.png')
 
     plt.figure(figsize=(20, 10))
-    sns.histplot(df['Total_Trans_Ct'], stat='density', kde=True)
+    sns.histplot(data_frame['Total_Trans_Ct'], stat='density', kde=True)
     plt.savefig('images/eda/total_trans_ct_hist.png')
 
     plt.figure(figsize=(20, 10))
-    sns.heatmap(df.corr(), annot=False, cmap='Dark2_r', linewidths=2)
+    sns.heatmap(data_frame.corr(), annot=False, cmap='Dark2_r', linewidths=2)
     plt.savefig('images/eda/heatmap.png')
 
 
-def encoder_helper(df, category_lst, response):
+def encoder_helper(data_frame, category_lst, response):
     '''
     helper function to turn each categorical column into a new column with
     propotion of churn for each category - associated with cell 15 from the notebook
 
     input:
-            df: pandas dataframe
+            data_frame: pandas dataframe
             category_lst: list of columns that contain categorical features
             response: string of response name
 
     output:
-            df: pandas dataframe with new columns for
+            data_frame: pandas dataframe with new columns for
     '''
     for category, new_category_name in zip(category_lst, response):
         encoded_values = []
-        encoded_groups = df.groupby(category).mean()['Churn']
+        encoded_groups = data_frame.groupby(category).mean()['Churn']
 
-        for val in df[category]:
+        for val in data_frame[category]:
             encoded_values.append(encoded_groups.loc[val])
 
-        df[new_category_name] = encoded_values
+        data_frame[new_category_name] = encoded_values
 
-    return df
+    return data_frame
 
 
-def perform_feature_engineering(df, response=None):
+def perform_feature_engineering(data_frame, response=None):
     '''
     input:
-              df: pandas dataframe
+              data_frame: pandas dataframe
               response: string of response name [optional argument that could be used for naming variables or index y column]
 
     output:
@@ -98,7 +105,7 @@ def perform_feature_engineering(df, response=None):
               y_train: y training data
               y_test: y testing data
     '''
-    y = df['Churn']
+    y = data_frame['Churn']
     X = pd.DataFrame()
 
     cat_columns = [
@@ -111,7 +118,7 @@ def perform_feature_engineering(df, response=None):
 
     if not response:
         response = [f'{category}_Churn' for category in cat_columns]
-    df = encoder_helper(df, category_lst=cat_columns, response=response)
+    data_frame = encoder_helper(data_frame, category_lst=cat_columns, response=response)
 
     keep_cols = ['Customer_Age', 'Dependent_count', 'Months_on_book',
                  'Total_Relationship_Count', 'Months_Inactive_12_mon',
@@ -121,7 +128,7 @@ def perform_feature_engineering(df, response=None):
                  'Gender_Churn', 'Education_Level_Churn', 'Marital_Status_Churn',
                  'Income_Category_Churn', 'Card_Category_Churn']
 
-    X[keep_cols] = df[keep_cols]
+    X[keep_cols] = data_frame[keep_cols]
     # X.head()
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.3, random_state=42)
@@ -240,13 +247,6 @@ def train_models(X_train, X_test, y_train, y_test, show_plot=True):
         'criterion': ['gini', 'entropy']
     }
 
-    """param_grid = {
-        'n_estimators': [200],
-        'max_features': ['auto'],
-        'max_depth': [4],
-        'criterion': ['gini']
-    }"""
-
     cv_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid, cv=5)
     cv_rfc.fit(X_train, y_train)
 
@@ -275,10 +275,10 @@ def train_models(X_train, X_test, y_train, y_test, show_plot=True):
 
     # plots
     plt.figure(figsize=(15, 8))
-    ax = plt.gca()
+    axes = plt.gca()
     plot_roc_curve(cv_rfc.best_estimator_,
-                   X_test, y_test, ax=ax, alpha=0.8)
-    lrc_plot.plot(ax=ax, alpha=0.8)
+                   X_test, y_test, ax=axes, alpha=0.8)
+    lrc_plot.plot(ax=axes, alpha=0.8)
     if show_plot:
         plt.show()
 
@@ -292,9 +292,9 @@ def train_models(X_train, X_test, y_train, y_test, show_plot=True):
     lrc_plot = plot_roc_curve(lr_model, X_test, y_test)
 
     plt.figure(figsize=(15, 8))
-    ax = plt.gca()
-    plot_roc_curve(rfc_model, X_test, y_test, ax=ax, alpha=0.8)
-    lrc_plot.plot(ax=ax, alpha=0.8)
+    axes = plt.gca()
+    plot_roc_curve(rfc_model, X_test, y_test, ax=axes, alpha=0.8)
+    lrc_plot.plot(ax=axes, alpha=0.8)
     if show_plot:
         plt.show()
 
